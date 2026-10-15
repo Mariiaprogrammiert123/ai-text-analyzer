@@ -1,324 +1,874 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AI Text Analyzer</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <style>
-    * {
-      box-sizing: border-box;
-    }
+    <title>AI Text Analyzer</title>
 
-    body {
-      margin: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: #f5f6fa;
-      color: #202338;
-    }
+    <!-- PDF.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 
-    header {
-      padding: 24px 8%;
-      background: #333399;
-      color: white;
-    }
+    <!-- Mammoth.js für Word-Dokumente -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.8.0/mammoth.browser.min.js"></script>
 
-    header h1 {
-      margin: 0;
-      font-size: 28px;
-    }
+    <style>
+        :root {
+            --primary: #333399;
+            --secondary: #8585C2;
+            --background: #f5f6fa;
+            --surface: #ffffff;
+            --text: #24243a;
+            --muted: #707087;
+            --border: #e2e3ee;
+            --success: #e5f6e9;
+            --warning: #fff5dc;
+        }
 
-    header p {
-      color: #e1e1ff;
-      margin-bottom: 0;
-    }
+        * {
+            box-sizing: border-box;
+        }
 
-    main {
-      max-width: 1000px;
-      margin: 40px auto;
-      padding: 0 20px;
-    }
+        body {
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont,
+                         "Segoe UI", Arial, sans-serif;
+            background: var(--background);
+            color: var(--text);
+            line-height: 1.6;
+        }
 
-    .card {
-      background: white;
-      padding: 28px;
-      margin-bottom: 24px;
-      border-radius: 16px;
-      box-shadow: 0 5px 22px #2023380d;
-    }
+        header {
+            background: var(--primary);
+            color: white;
+            padding: 28px 24px;
+        }
 
-    h2 {
-      margin-top: 0;
-      font-size: 21px;
-    }
+        .header-content {
+            max-width: 1100px;
+            margin: auto;
+        }
 
-    textarea {
-      width: 100%;
-      min-height: 240px;
-      padding: 16px;
-      border: 1px solid #d9dbea;
-      border-radius: 10px;
-      font: inherit;
-      resize: vertical;
-      outline-color: #333399;
-    }
+        .brand {
+            font-size: 13px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: #d8d8ff;
+            font-weight: 700;
+        }
 
-    button {
-      margin-top: 16px;
-      padding: 13px 22px;
-      border: 0;
-      border-radius: 9px;
-      background: #333399;
-      color: white;
-      font-size: 15px;
-      font-weight: 600;
-      cursor: pointer;
-    }
+        header h1 {
+            font-size: clamp(27px, 4vw, 38px);
+            margin: 8px 0;
+        }
 
-    button:hover {
-      background: #252575;
-    }
+        header p {
+            margin: 0;
+            color: #e1e1ff;
+        }
 
-    .stats {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 14px;
-      margin-top: 22px;
-    }
+        main {
+            max-width: 1100px;
+            margin: 35px auto;
+            padding: 0 20px;
+        }
 
-    .stat {
-      padding: 18px;
-      background: #f3f3fc;
-      border-radius: 10px;
-    }
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 26px;
+            margin-bottom: 24px;
+            box-shadow: 0 5px 20px rgba(30, 30, 70, 0.04);
+        }
 
-    .stat strong {
-      display: block;
-      margin-top: 8px;
-      font-size: 26px;
-      color: #333399;
-    }
+        h2 {
+            font-size: 22px;
+            margin-top: 0;
+        }
 
-    .result {
-      display: none;
-    }
+        h3 {
+            margin-top: 25px;
+        }
 
-    .notice {
-      padding: 16px;
-      border-radius: 10px;
-      background: #fff6df;
-      line-height: 1.6;
-      color: #664d12;
-    }
+        .description {
+            color: var(--muted);
+            margin-bottom: 22px;
+        }
 
-    .analysis-list {
-      line-height: 1.8;
-      padding-left: 22px;
-    }
+        .upload-area {
+            padding: 25px;
+            background: #f6f6fc;
+            border: 2px dashed #b9b9dd;
+            border-radius: 12px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
 
-    .secondary {
-      background: #e9e9f8;
-      color: #333399;
-      margin-left: 8px;
-    }
+        .upload-area p {
+            margin-top: 5px;
+            color: var(--muted);
+            font-size: 14px;
+        }
 
-    footer {
-      padding: 25px;
-      text-align: center;
-      color: #777;
-      font-size: 13px;
-    }
+        input[type="file"] {
+            display: block;
+            max-width: 100%;
+            margin: 15px auto;
+        }
 
-    @media (max-width: 600px) {
-      .stats {
-        grid-template-columns: 1fr;
-      }
+        textarea {
+            width: 100%;
+            min-height: 260px;
+            padding: 17px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            font: inherit;
+            resize: vertical;
+            color: var(--text);
+            background: white;
+            outline-color: var(--secondary);
+        }
 
-      .card {
-        padding: 20px;
-      }
+        textarea:focus {
+            border-color: var(--secondary);
+        }
 
-      .secondary {
-        margin-left: 0;
-      }
-    }
-  </style>
+        .button-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 16px;
+        }
+
+        button {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 9px;
+            background: var(--primary);
+            color: white;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.2s;
+        }
+
+        button:hover {
+            background: #252575;
+            transform: translateY(-1px);
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: wait;
+            transform: none;
+        }
+
+        button.secondary {
+            background: #ededfa;
+            color: var(--primary);
+        }
+
+        button.secondary:hover {
+            background: #dedefa;
+        }
+
+        .status {
+            margin-top: 12px;
+            font-size: 14px;
+            color: var(--muted);
+            overflow-wrap: anywhere;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 15px;
+            margin-top: 24px;
+        }
+
+        .stat {
+            padding: 19px;
+            border-radius: 11px;
+            background: #f3f3fc;
+        }
+
+        .stat-label {
+            font-size: 13px;
+            color: var(--muted);
+        }
+
+        .stat-value {
+            display: block;
+            margin-top: 5px;
+            color: var(--primary);
+            font-size: 28px;
+            font-weight: 700;
+            overflow-wrap: anywhere;
+        }
+
+        .result {
+            display: none;
+        }
+
+        .notice {
+            background: var(--warning);
+            padding: 16px;
+            border-radius: 10px;
+            font-size: 14px;
+        }
+
+        .result-section {
+            margin-top: 25px;
+        }
+
+        .result-section ul {
+            padding-left: 23px;
+        }
+
+        .result-section li {
+            margin-bottom: 10px;
+        }
+
+        .progress-track {
+            height: 8px;
+            background: #e9e9f5;
+            border-radius: 20px;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+
+        .progress-bar {
+            height: 100%;
+            width: 0;
+            background: var(--secondary);
+            transition: width 0.4s;
+        }
+
+        .progress-item {
+            margin: 18px 0;
+        }
+
+        .progress-label {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            font-size: 14px;
+        }
+
+        .empty-message {
+            color: var(--muted);
+        }
+
+        footer {
+            padding: 28px 20px;
+            text-align: center;
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        @media (max-width: 750px) {
+            .stats {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .card {
+                padding: 20px;
+            }
+        }
+
+        @media (max-width: 420px) {
+            .stats {
+                grid-template-columns: 1fr 1fr;
+                gap: 8px;
+            }
+
+            .stat {
+                padding: 12px;
+            }
+
+            .stat-value {
+                font-size: 23px;
+            }
+
+            .upload-area {
+                padding: 16px;
+            }
+        }
+    </style>
 </head>
 
 <body>
 
 <header>
-  <h1>AI Text Analyzer</h1>
-  <p>Textanalyse für Studium, Hausarbeiten und wissenschaftliche Texte</p>
+    <div class="header-content">
+        <div class="brand">Student Project</div>
+        <h1>AI Text Analyzer</h1>
+        <p>Textanalyse für Studium und wissenschaftliche Arbeiten</p>
+    </div>
 </header>
 
 <main>
-  <section class="card">
-    <h2>Text analysieren</h2>
 
-    <p>
-      Füge deinen Text ein, um statistische Kennzahlen und
-      Hinweise zu sprachlichen Merkmalen zu erhalten.
-    </p>
+    <section class="card">
+        <h2>Dokument hochladen</h2>
 
-    <textarea
-      id="textInput"
-      placeholder="Füge hier deinen Text ein ..."
-    ></textarea>
+        <p class="description">
+            Lade ein Dokument hoch oder füge deinen Text direkt in das Textfeld ein.
+        </p>
 
-    <br>
+        <div class="upload-area">
+            <strong>Wähle eine Datei aus</strong>
 
-    <button onclick="analyzeText()">Text analysieren</button>
-    <button class="secondary" onclick="clearText()">Zurücksetzen</button>
+            <p>
+                Unterstützte Formate: PDF, DOCX und TXT
+            </p>
 
-    <div class="stats">
-      <div class="stat">
-        Wörter
-        <strong id="words">0</strong>
-      </div>
+            <input
+                type="file"
+                id="documentInput"
+                accept=".pdf,.docx,.txt"
+            >
 
-      <div class="stat">
-        Zeichen
-        <strong id="characters">0</strong>
-      </div>
+            <div id="uploadStatus" class="status" aria-live="polite">
+                Noch keine Datei ausgewählt.
+            </div>
+        </div>
 
-      <div class="stat">
-        Sätze
-        <strong id="sentences">0</strong>
-      </div>
-    </div>
-  </section>
+        <h3>Dein Text</h3>
 
-  <section class="card result" id="result">
-    <h2>Analyseergebnisse</h2>
+        <textarea
+            id="textInput"
+            placeholder="Füge hier deinen Text ein ..."
+            aria-label="Text zur Analyse"
+        ></textarea>
 
-    <div class="notice">
-      <strong>Wichtiger Hinweis:</strong>
-      Diese Anwendung untersucht sprachliche und formale Merkmale.
-      Sie kann nicht zuverlässig feststellen, ob ein Text von einem
-      Menschen oder einer KI geschrieben wurde. Die Ergebnisse sind
-      kein Nachweis für die Urheberschaft.
-    </div>
+        <div class="button-row">
+            <button id="analyzeButton" type="button">
+                Text analysieren
+            </button>
 
-    <h3>Sprachliche Merkmale</h3>
-    <ul class="analysis-list" id="observations"></ul>
+            <button id="clearButton" class="secondary" type="button">
+                Zurücksetzen
+            </button>
+        </div>
 
-    <h3>Verbesserungspotenzial</h3>
-    <ul class="analysis-list" id="recommendations"></ul>
-  </section>
+        <div class="stats">
+            <div class="stat">
+                <span class="stat-label">Wörter</span>
+                <strong class="stat-value" id="words">0</strong>
+            </div>
+
+            <div class="stat">
+                <span class="stat-label">Zeichen</span>
+                <strong class="stat-value" id="characters">0</strong>
+            </div>
+
+            <div class="stat">
+                <span class="stat-label">Sätze</span>
+                <strong class="stat-value" id="sentences">0</strong>
+            </div>
+
+            <div class="stat">
+                <span class="stat-label">Absätze</span>
+                <strong class="stat-value" id="paragraphs">0</strong>
+            </div>
+        </div>
+    </section>
+
+    <section class="card result" id="result">
+        <h2>Analyseergebnisse</h2>
+
+        <div class="notice">
+            <strong>Wichtiger Hinweis:</strong>
+            Diese Anwendung untersucht statistische und sprachliche Merkmale.
+            Sie ist kein zuverlässiger KI-Detektor und kann nicht feststellen,
+            ob ein Text von einem Menschen oder einer KI geschrieben wurde.
+            Die Ergebnisse sind kein Beweis für die Urheberschaft.
+        </div>
+
+        <div class="result-section">
+            <h3>Sprachliche Kennzahlen</h3>
+            <ul id="observations"></ul>
+        </div>
+
+        <div class="result-section">
+            <h3>Wortschatz</h3>
+            <ul id="vocabulary"></ul>
+        </div>
+
+        <div class="result-section">
+            <h3>Satzstruktur</h3>
+            <ul id="sentenceAnalysis"></ul>
+        </div>
+
+        <div class="result-section">
+            <h3>Häufige Wörter</h3>
+            <ul id="frequentWords"></ul>
+        </div>
+
+        <div class="result-section">
+            <h3>Verbesserungsvorschläge</h3>
+            <ul id="recommendations"></ul>
+        </div>
+
+        <div class="result-section">
+            <h3>Textumfang</h3>
+
+            <div class="progress-item">
+                <div class="progress-label">
+                    <span>Wörter</span>
+                    <span id="wordProgressLabel">0 %</span>
+                </div>
+
+                <div class="progress-track">
+                    <div class="progress-bar" id="wordProgress"></div>
+                </div>
+            </div>
+
+            <div class="progress-item">
+                <div class="progress-label">
+                    <span>Sätze</span>
+                    <span id="sentenceProgressLabel">0 %</span>
+                </div>
+
+                <div class="progress-track">
+                    <div class="progress-bar" id="sentenceProgress"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="button-row">
+            <button id="exportButton" type="button">
+                Analysebericht herunterladen
+            </button>
+        </div>
+    </section>
+
 </main>
 
 <footer>
-  AI Text Analyzer · Ein studentisches Projekt
+    AI Text Analyzer · Ein studentisches Projekt
+    <br>
+    Die Analyse erfolgt lokal im Browser.
 </footer>
 
 <script>
-  function analyzeText() {
-    const text = document.getElementById("textInput").value.trim();
+    "use strict";
 
-    if (!text) {
-      alert("Bitte füge zuerst einen Text zur Analyse ein.");
-      return;
+    const textInput = document.getElementById("textInput");
+    const documentInput = document.getElementById("documentInput");
+    const uploadStatus = document.getElementById("uploadStatus");
+    const analyzeButton = document.getElementById("analyzeButton");
+
+    let latestReport = null;
+
+    if (window.pdfjsLib) {
+        pdfjsLib.GlobalWorkerOptions.workerSrc =
+            "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
     }
 
-    const words = text.match(/[\p{L}\p{N}]+(?:['’_-][\p{L}\p{N}]+)*/gu) || [];
-    const sentences = text
-      .split(/[.!?]+/)
-      .filter(sentence => sentence.trim().length > 0);
+    // Dokumente im Browser auslesen
+    documentInput.addEventListener("change", async function () {
+        const file = this.files[0];
 
-    const averageWordLength = words.length
-      ? words.reduce((sum, word) => sum + word.length, 0) / words.length
-      : 0;
+        if (!file) {
+            return;
+        }
 
-    const averageSentenceLength = sentences.length
-      ? words.length / sentences.length
-      : 0;
+        const extension = file.name.split(".").pop().toLowerCase();
 
-    const observations = [];
-    const recommendations = [];
+        uploadStatus.textContent = "Dokument wird verarbeitet ...";
 
-    observations.push(
-      "Der Text umfasst " + words.length + " Wörter und "
-      + sentences.length + " Sätze."
-    );
+        try {
+            let extractedText = "";
 
-    observations.push(
-      "Die durchschnittliche Wortlänge beträgt "
-      + averageWordLength.toFixed(1) + " Zeichen."
-    );
+            if (extension === "txt") {
+                extractedText = await file.text();
 
-    observations.push(
-      "Ein Satz enthält durchschnittlich "
-      + averageSentenceLength.toFixed(1) + " Wörter."
-    );
+            } else if (extension === "pdf") {
+                if (!window.pdfjsLib) {
+                    throw new Error(
+                        "Die PDF-Bibliothek konnte nicht geladen werden."
+                    );
+                }
 
-    if (words.length < 100) {
-      observations.push(
-        "Der Text ist relativ kurz. Die Aussagekraft der statistischen "
-        + "Beobachtungen ist deshalb begrenzt."
-      );
-    }
+                const buffer = await file.arrayBuffer();
 
-    if (averageSentenceLength > 25) {
-      recommendations.push(
-        "Prüfe lange Sätze und teile sie bei Bedarf auf, um die Lesbarkeit zu verbessern."
-      );
-    } else if (averageSentenceLength < 8 && sentences.length > 3) {
-      recommendations.push(
-        "Prüfe, ob der Text aus vielen sehr kurzen Sätzen besteht und zusätzliche Verknüpfungen sinnvoll wären."
-      );
-    } else {
-      recommendations.push(
-        "Prüfe, ob Satzlängen und Übergänge zum jeweiligen Textzweck passen."
-      );
-    }
+                const pdf = await pdfjsLib.getDocument({
+                    data: new Uint8Array(buffer)
+                }).promise;
 
-    if (words.length < 200) {
-      recommendations.push(
-        "Falls es die Aufgabenstellung verlangt, ergänze Begründungen, Beispiele und Belege."
-      );
-    }
+                const pages = [];
 
-    recommendations.push(
-      "Kontrolliere Fakten, Quellenangaben und die Nachvollziehbarkeit deiner Argumentation."
-    );
+                for (
+                    let pageNumber = 1;
+                    pageNumber <= pdf.numPages;
+                    pageNumber++
+                ) {
+                    const page = await pdf.getPage(pageNumber);
+                    const content = await page.getTextContent();
 
-    const observationsList = document.getElementById("observations");
-    const recommendationsList = document.getElementById("recommendations");
+                    const pageText = content.items
+                        .map(item => item.str)
+                        .join(" ");
 
-    observationsList.replaceChildren();
-    recommendationsList.replaceChildren();
+                    pages.push(pageText);
+                }
 
-    observations.forEach(item => {
-      const li = document.createElement("li");
-      li.textContent = item;
-      observationsList.appendChild(li);
+                extractedText = pages.join("\n\n");
+
+            } else if (extension === "docx") {
+                if (!window.mammoth) {
+                    throw new Error(
+                        "Die Word-Bibliothek konnte nicht geladen werden."
+                    );
+                }
+
+                const result = await mammoth.extractRawText({
+                    arrayBuffer: await file.arrayBuffer()
+                });
+
+                extractedText = result.value;
+
+            } else {
+                throw new Error(
+                    "Dieses Dateiformat wird nicht unterstützt."
+                );
+            }
+
+            if (!extractedText.trim()) {
+                throw new Error(
+                    "Es wurde kein Text gefunden. Bei gescannten PDFs ist OCR erforderlich."
+                );
+            }
+
+            textInput.value = extractedText;
+
+            uploadStatus.textContent =
+                "Datei erfolgreich geladen: " + file.name;
+
+        } catch (error) {
+            uploadStatus.textContent =
+                "Fehler: " + error.message;
+        }
     });
 
-    recommendations.forEach(item => {
-      const li = document.createElement("li");
-      li.textContent = item;
-      recommendationsList.appendChild(li);
-    });
+    // Hilfsfunktion für Listen
+    function renderList(elementId, items) {
+        const list = document.getElementById(elementId);
 
-    document.getElementById("words").textContent = words.length;
-    document.getElementById("characters").textContent = text.length;
-    document.getElementById("sentences").textContent = sentences.length;
+        list.replaceChildren();
 
-    const result = document.getElementById("result");
-    result.style.display = "block";
-    result.scrollIntoView({ behavior: "smooth" });
-  }
+        if (!items.length) {
+            const li = document.createElement("li");
+            li.textContent = "Keine Daten verfügbar.";
+            list.appendChild(li);
+            return;
+        }
 
-  function clearText() {
-    document.getElementById("textInput").value = "";
-    document.getElementById("words").textContent = "0";
-    document.getElementById("characters").textContent = "0";
-    document.getElementById("sentences").textContent = "0";
-    document.getElementById("observations").replaceChildren();
-    document.getElementById("recommendations").replaceChildren();
-    document.getElementById("result").style.display = "none";
-  }
+        items.forEach(item => {
+            const li = document.createElement("li");
+            li.textContent = item;
+            list.appendChild(li);
+        });
+    }
+
+    // Text analysieren
+    function analyzeText() {
+        const text = textInput.value.trim();
+
+        if (!text) {
+            alert("Bitte füge zuerst einen Text ein.");
+            return;
+        }
+
+        const words = text.match(/[\p{L}\p{N}]+(?:['’_-][\p{L}\p{N}]+)*/gu) || [];
+
+        const sentences = text
+            .split(/[.!?]+(?:\s|$)/)
+            .map(sentence => sentence.trim())
+            .filter(Boolean);
+
+        const paragraphs = text
+            .split(/\n\s*\n/)
+            .map(paragraph => paragraph.trim())
+            .filter(Boolean);
+
+        const normalizedWords = words.map(word => word.toLocaleLowerCase("de"));
+
+        const averageWordLength = words.length
+            ? words.reduce((sum, word) => sum + word.length, 0) / words.length
+            : 0;
+
+        const averageSentenceLength = sentences.length
+            ? words.length / sentences.length
+            : 0;
+
+        const uniqueWords = new Set(normalizedWords);
+        const vocabularyRatio = words.length
+            ? uniqueWords.size / words.length * 100
+            : 0;
+
+        const observations = [
+            "Der Text enthält " + words.length + " Wörter.",
+            "Die durchschnittliche Wortlänge beträgt " +
+                averageWordLength.toFixed(1) + " Zeichen.",
+            "Ein Satz enthält durchschnittlich " +
+                averageSentenceLength.toFixed(1) + " Wörter.",
+            "Der Text besteht aus " + paragraphs.length + " Absätzen."
+        ];
+
+        const vocabulary = [
+            "Anzahl unterschiedlicher Wörter: " + uniqueWords.size + ".",
+            "Anteil unterschiedlicher Wörter an allen Wörtern: " +
+                vocabularyRatio.toFixed(1) + " %."
+        ];
+
+        const sentenceAnalysis = [];
+
+        if (averageSentenceLength > 25) {
+            sentenceAnalysis.push(
+                "Die Sätze sind im Durchschnitt lang. Prüfe, ob einige Sätze geteilt werden können."
+            );
+        } else if (averageSentenceLength < 8 && sentences.length > 3) {
+            sentenceAnalysis.push(
+                "Die Sätze sind im Durchschnitt kurz. Prüfe, ob zusätzliche Verbindungen den Lesefluss verbessern."
+            );
+        } else {
+            sentenceAnalysis.push(
+                "Die durchschnittliche Satzlänge liegt bei " +
+                averageSentenceLength.toFixed(1) +
+                " Wörtern. Ob sie angemessen ist, hängt vom Textzweck ab."
+            );
+        }
+
+        const stopWords = new Set([
+            "aber", "alle", "allem", "allen", "aller", "alles",
+            "als", "also", "am", "an", "ander", "andere", "anderem",
+            "anderen", "anderer", "anderes", "auch", "auf", "aus",
+            "bei", "bin", "bis", "bist", "da", "damit", "dann",
+            "das", "dass", "dem", "den", "denn", "der", "des",
+            "die", "dies", "diese", "diesem", "diesen", "dieser",
+            "dieses", "doch", "dort", "du", "durch", "ein", "eine",
+            "einem", "einen", "einer", "eines", "einige", "einigem",
+            "einigen", "einiger", "einiges", "einmal", "er", "es",
+            "etwas", "für", "gegen", "gewesen", "hat", "hatte",
+            "haben", "hier", "hin", "hinter", "ich", "ihm", "ihn",
+            "ihnen", "ihr", "ihre", "ihrem", "ihren", "ihrer",
+            "ihres", "im", "in", "indem", "ins", "ist", "jede",
+            "jedem", "jeden", "jeder", "jedes", "jedoch", "kann",
+            "kein", "keine", "keinem", "keinen", "keiner", "keines",
+            "mit", "muss", "musste", "nach", "nicht", "nichts",
+            "noch", "nun", "nur", "ob", "oder", "ohne", "sehr",
+            "sein", "seine", "seinem", "seinen", "seiner", "seines",
+            "selbst", "sich", "sie", "sind", "so", "solche",
+            "solchem", "solchen", "solcher", "solches", "um", "und",
+            "uns", "unser", "unsere", "unter", "vom", "von", "vor",
+            "war", "waren", "warst", "was", "weil", "weiter",
+            "welche", "welchem", "welchen", "welcher", "welches",
+            "wenn", "wer", "werde", "werden", "wie", "wieder",
+            "will", "wir", "wird", "wirst", "wo", "zu", "zum",
+            "zur", "über"
+        ]);
+
+        const frequencies = new Map();
+
+        normalizedWords.forEach(word => {
+            if (word.length < 4 || stopWords.has(word)) {
+                return;
+            }
+
+            frequencies.set(word, (frequencies.get(word) || 0) + 1);
+        });
+
+        const mostFrequent = [...frequencies.entries()]
+            .filter(([, count]) => count > 1)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 10)
+            .map(([word, count]) =>
+                '"' + word + '" kommt ' + count + "-mal vor."
+            );
+
+        const recommendations = [];
+
+        if (words.length < 200) {
+            recommendations.push(
+                "Der Text ist relativ kurz. Prüfe, ob die Aufgabenstellung weitere Begründungen oder Beispiele verlangt."
+            );
+        }
+
+        if (averageSentenceLength > 25) {
+            recommendations.push(
+                "Überarbeite gegebenenfalls lange Sätze, um die Verständlichkeit zu erhöhen."
+            );
+        }
+
+        if (mostFrequent.length) {
+            recommendations.push(
+                "Prüfe, ob häufig wiederholte Begriffe an manchen Stellen durch passende Formulierungen ersetzt werden können."
+            );
+        }
+
+        recommendations.push(
+            "Kontrolliere die Quellenangaben und überprüfe, ob alle Fakten korrekt sind."
+        );
+
+        recommendations.push(
+            "Achte darauf, dass die Argumentation nachvollziehbar ist und Schlussfolgerungen durch Belege gestützt werden."
+        );
+
+        document.getElementById("words").textContent =
+            words.length.toLocaleString("de-DE");
+
+        document.getElementById("characters").textContent =
+            text.length.toLocaleString("de-DE");
+
+        document.getElementById("sentences").textContent =
+            sentences.length.toLocaleString("de-DE");
+
+        document.getElementById("paragraphs").textContent =
+            paragraphs.length.toLocaleString("de-DE");
+
+        renderList("observations", observations);
+        renderList("vocabulary", vocabulary);
+        renderList("sentenceAnalysis", sentenceAnalysis);
+        renderList("frequentWords", mostFrequent);
+        renderList("recommendations", recommendations);
+
+        const wordPercentage = Math.min(words.length / 1000 * 100, 100);
+        const sentencePercentage = Math.min(sentences.length / 50 * 100, 100);
+
+        document.getElementById("wordProgress").style.width =
+            wordPercentage + "%";
+
+        document.getElementById("wordProgressLabel").textContent =
+            Math.round(wordPercentage) + " %";
+
+        document.getElementById("sentenceProgress").style.width =
+            sentencePercentage + "%";
+
+        document.getElementById("sentenceProgressLabel").textContent =
+            Math.round(sentencePercentage) + " %";
+
+        latestReport = {
+            date: new Date().toLocaleString("de-DE"),
+            words: words.length,
+            characters: text.length,
+            sentences: sentences.length,
+            paragraphs: paragraphs.length,
+            observations,
+            vocabulary,
+            sentenceAnalysis,
+            frequentWords: mostFrequent,
+            recommendations
+        };
+
+        document.getElementById("result").style.display = "block";
+
+        document.getElementById("result").scrollIntoView({
+            behavior: "smooth",
+            block: "start"
+        });
+    }
+
+    // Analysebericht als Textdatei herunterladen
+    function exportReport() {
+        if (!latestReport) {
+            alert("Bitte analysiere zuerst einen Text.");
+            return;
+        }
+
+        const report = latestReport;
+
+        const sections = [
+            "AI TEXT ANALYZER — ANALYSEBERICHT",
+            "Erstellt am: " + report.date,
+            "",
+            "STATISTIK",
+            "Wörter: " + report.words,
+            "Zeichen: " + report.characters,
+            "Sätze: " + report.sentences,
+            "Absätze: " + report.paragraphs,
+            "",
+            "SPRACHLICHE KENNZAHLEN",
+            ...report.observations,
+            "",
+            "WORTSCHATZ",
+            ...report.vocabulary,
+            "",
+            "SATZSTRUKTUR",
+            ...report.sentenceAnalysis,
+            "",
+            "HÄUFIGE WÖRTER",
+            ...(report.frequentWords.length
+                ? report.frequentWords
+                : ["Keine häufigen Inhaltswörter gefunden."]),
+            "",
+            "VERBESSERUNGSVORSCHLÄGE",
+            ...report.recommendations,
+            "",
+            "HINWEIS",
+            "Die Analyse untersucht statistische Merkmale und ist kein zuverlässiger KI-Detektor."
+        ];
+
+        const blob = new Blob(
+            ["\uFEFF" + sections.join("\n")],
+            { type: "text/plain;charset=utf-8" }
+        );
+
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+
+        link.href = url;
+        link.download = "Textanalyse-Bericht.txt";
+
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+
+        URL.revokeObjectURL(url);
+    }
+
+    // Text und Ergebnisse zurücksetzen
+    function clearText() {
+        textInput.value = "";
+        documentInput.value = "";
+
+        uploadStatus.textContent =
+            "Noch keine Datei ausgewählt.";
+
+        ["words", "characters", "sentences", "paragraphs"].forEach(id => {
+            document.getElementById(id).textContent = "0";
+        });
+
+        [
+            "observations",
+            "vocabulary",
+            "sentenceAnalysis",
+            "frequentWords",
+            "recommendations"
+        ].forEach(id => {
+            document.getElementById(id).replaceChildren();
+        });
+
+        document.getElementById("wordProgress").style.width = "0%";
+        document.getElementById("sentenceProgress").style.width = "0%";
+        document.getElementById("wordProgressLabel").textContent = "0 %";
+        document.getElementById("sentenceProgressLabel").textContent = "0 %";
+
+        document.getElementById("result").style.display = "none";
+
+        latestReport = null;
+    }
+
+    analyzeButton.addEventListener("click", analyzeText);
+
+    document.getElementById("clearButton")
+        .addEventListener("click", clearText);
+
+    document.getElementById("exportButton")
+        .addEventListener("click", exportReport);
 </script>
 
 </body>
