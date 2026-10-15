@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Text Analyzer</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f5f6fa;
+      color: #202338;
+    }
+
+    header {
+      padding: 22px 8%;
+      background: #24245b;
+      color: white;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 25px;
+    }
+
+    header p {
+      margin-bottom: 0;
+      color: #d6d6ef;
+    }
+
+    main {
+      max-width: 950px;
+      margin: 40px auto;
+      padding: 0 20px;
+    }
+
+    .card {
+      background: white;
+      padding: 26px;
+      margin-bottom: 22px;
+      border-radius: 16px;
+      box-shadow: 0 5px 22px #2023380d;
+    }
+
+    h2 {
+      margin-top: 0;
+      font-size: 20px;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 230px;
+      padding: 16px;
+      border: 1px solid #d9dbea;
+      border-radius: 10px;
+      font: inherit;
+      resize: vertical;
+      outline-color: #6666c5;
+    }
+
+    button {
+      margin-top: 16px;
+      padding: 13px 22px;
+      border: 0;
+      border-radius: 9px;
+      background: #4545a0;
+      color: white;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #33337f;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      margin-top: 22px;
+    }
+
+    .stat {
+      padding: 18px;
+      background: #f3f3fc;
+      border-radius: 10px;
+    }
+
+    .stat strong {
+      display: block;
+      margin-top: 8px;
+      font-size: 26px;
+      color: #4545a0;
+    }
+
+    .result {
+      display: none;
+    }
+
+    .notice {
+      padding: 15px;
+      border-radius: 10px;
+      background: #fff6df;
+      line-height: 1.6;
+      color: #664d12;
+    }
+
+    .analysis-list {
+      line-height: 1.9;
+      padding-left: 22px;
+    }
+
+    footer {
+      padding: 25px;
+      text-align: center;
+      color: #777;
+      font-size: 13px;
+    }
+
+    @media (max-width: 600px) {
+      .stats {
+        grid-template-columns: 1fr;
+      }
+
+      .card {
+        padding: 20px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+<header>
+  <h1>AI Text Analyzer</h1>
+  <p>Инструмент анализа текста для студентов</p>
+</header>
+
+<main>
+  <section class="card">
+    <h2>Анализ текста</h2>
+
+    <p>
+      Вставь текст, чтобы получить статистику
+      и анализ его стилистических особенностей.
+    </p>
+
+    <textarea
+      id="textInput"
+      placeholder="Вставь сюда текст для анализа..."
+    ></textarea>
+
+    <button onclick="analyzeText()">
+      Анализировать текст
+    </button>
+
+    <div class="stats">
+      <div class="stat">
+        Количество слов
+        <strong id="words">0</strong>
+      </div>
+
+      <div class="stat">
+        Количество символов
+        <strong id="characters">0</strong>
+      </div>
+
+      <div class="stat">
+        Предложения
+        <strong id="sentences">0</strong>
+      </div>
+    </div>
+  </section>
+
+  <section class="card result" id="result">
+    <h2>Результаты анализа</h2>
+
+    <div class="notice">
+      Этот инструмент анализирует формальные особенности текста.
+      Он не определяет достоверно, был ли текст создан ИИ.
+      Стилистические признаки не являются доказательством авторства.
+    </div>
+
+    <h3>Стилистические наблюдения</h3>
+    <ul class="analysis-list" id="observations"></ul>
+
+    <h3>Рекомендации</h3>
+    <ul class="analysis-list" id="recommendations"></ul>
+  </section>
+</main>
+
+<footer>
+  AI Text Analyzer · Учебный проект
+</footer>
+
+<script>
+  function analyzeText() {
+    const text = document
+      .getElementById("textInput")
+      .value.trim();
+
+    if (!text) {
+      alert("Сначала вставь текст для анализа.");
+      return;
+    }
+
+    const words = text.match(/\b[\p{L}\p{N}'’-]+\b/gu) || [];
+    const sentences = text
+      .split(/[.!?]+/)
+      .filter(sentence => sentence.trim().length > 0);
+
+    const averageWordLength = words.length
+      ? words.reduce((sum, word) => sum + word.length, 0)
+        / words.length
+      : 0;
+
+    const averageSentenceLength = sentences.length
+      ? words.length / sentences.length
+      : 0;
+
+    const observations = [];
+    const recommendations = [];
+
+    if (words.length < 100) {
+      observations.push(
+        "Текст короткий: для более содержательного анализа нужен больший объём."
+      );
+    } else {
+      observations.push(
+        "Объём текста позволяет провести базовый стилистический анализ."
+      );
+    }
+
+    observations.push(
+      "Средняя длина слова: " + averageWordLength.toFixed(1) + " символа."
+    );
+
+    observations.push(
+      "Средняя длина предложения: "
+      + averageSentenceLength.toFixed(1) + " слова."
+    );
+
+    if (averageSentenceLength > 25) {
+      recommendations.push(
+        "Проверь длинные предложения и раздели их там, где это улучшит ясность."
+      );
+    } else if (averageSentenceLength < 8) {
+      recommendations.push(
+        "Проверь, не состоит ли текст преимущественно из слишком коротких предложений."
+      );
+    } else {
+      recommendations.push(
+        "Оцени разнообразие длины предложений и связность аргументации."
+      );
+    }
+
+    if (words.length < 200) {
+      recommendations.push(
+        "При необходимости добавь аргументы, примеры и обоснования."
+      );
+    }
+
+    recommendations.push(
+      "Проверь факты, источники и соответствие выводов приведённым аргументам."
+    );
+
+    document.getElementById("words").textContent = words.length;
+    document.getElementById("characters").textContent = text.length;
+    document.getElementById("sentences").textContent = sentences.length;
+
+    const observationsList = document.getElementById("observations");
+    const recommendationsList =
+      document.getElementById("recommendations");
+
+    observationsList.replaceChildren();
+    recommendationsList.replaceChildren();
+
+    observations.forEach(item => {
+      const li = document.createElement("li");
+      li.textContent = item;
+      observationsList.appendChild(li);
+    });
+
+    recommendations.forEach(item => {
+      const li = document.createElement("li");
+      li.textContent = item;
+      recommendationsList.appendChild(li);
+    });
+
+    document.getElementById("result").style.display = "block";
+    document.getElementById("result").scrollIntoView({
+      behavior: "smooth"
+    });
+  }
+</script>
+
+</body>
+</html>
